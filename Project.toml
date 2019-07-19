@@ -1,0 +1,9 @@
+name = "PowerFlowUnderUncertainty"
+uuid = "26d6d24a-aa08-11e9-3fac-8f3e13edeea8"
+authors = ["timueh <tillmann.muehlpfordt@kit.edu>"]
+version = "0.1.0"
+
+[deps]
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+PolyChaos = "8d666b04-775d-5f6e-b778-5ac7c70f65a3"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
