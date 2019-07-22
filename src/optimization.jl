@@ -5,7 +5,13 @@ export  addVariables!,
         addPVBus!,
         addCost!,
         addInitialCondition!,
-        addCore!
+        addCore!,
+        addVariablesDC!,
+        addPowerFlowDC!,
+        addCostDC!,
+        addCoreDC!,
+        addConstraintsGenDC!,
+        addConstraintsLineFlowDC!
 
 function addVariables!(opf::Model,sys::Dict,unc::Dict)
     N, Ng = sys[:N], sys[:Ng]
@@ -70,4 +76,61 @@ function addCore!(mod::Model,sys::Dict,unc::Dict)
     addInitialCondition!(mod,sys,unc)
     addPowerFlow!(mod,sys,unc)
     addSlackBus!(mod)
+end
+
+#########################################################################
+## DC Equations ##
+
+function addVariablesDC!(mod::Model,sys::Dict,unc::Dict)
+    N, Ng = sys[:N], sys[:Ng]
+    K = size(unc[:pd],2)
+    @variable(mod, pg[i in 1:Ng, j in 1:K], base_name="p")
+end
+
+function addPowerFlowDC!(opf::Model,sys::Dict,unc::Dict)
+    Nd, Ng = sys[:Nd], sys[:Ng]
+    p, d = opf[:pg], unc[:pd]
+    K = size(d,2)
+    @assert size(d,1) == Nd "Detected inconsistency in number of demands."
+    @constraint(opf, energy_balance[j in 1:K], sum(p[i,j] for i in 1:Ng) - sum(d[i,j] for i in 1:Nd) == 0)
+end
+
+function addCostDC!(opf::Model,sys::Dict,unc::Dict)
+    p = opf[:pg]
+    Ng, K = size(p)
+    # to do: reformulate quadratic objective as an SOC!
+    # @objective(opf, Min, sum( p[i,1] * sys[:costlin][i] + sys[:costquad][i]*sum(p[i,l]^2 * unc[:T2].get([l-1,l-1]) for l in 1:K) for i in 1:Ng) )
+    @objective(opf, Min, sum( p[i,1]*sys[:costlin][i] for i in 1:Ng) )
+end
+
+function addConstraintsGenDC!(mod::Model,sys::Dict,unc::Dict)
+    lb, λlb = sys[:con][:pg][:lb], sys[:con][:pg][:λ][:lb]
+    ub, λub = sys[:con][:pg][:ub], sys[:con][:pg][:λ][:ub]
+    p = mod[:pg]
+    Ng, K = size(p)
+    mop = typeof(unc[:opq]) == OrthoPolyQ ? MultiOrthoPoly([unc[:opq]],unc[:opq].op.deg) : unc[:opq]
+    @constraint(mod, con_pmax[i in 1:Ng], [1/λub[i]*(ub[i] - mean(p[i,:],mop)); buildSOC(p[i,:],mop)] in SecondOrderCone())
+    @constraint(mod, con_pmin[i in 1:Ng], [1/λlb[i]*(mean(p[i,:],mop) - lb[i]); buildSOC(p[i,:],mop)] in SecondOrderCone())
+end
+
+function addConstraintsLineFlowDC!(mod::Model,sys::Dict,unc::Dict)
+    lb, λlb = sys[:con][:pl][:lb], sys[:con][:pl][:λ][:lb]
+    ub, λub = sys[:con][:pl][:ub], sys[:con][:pl][:λ][:ub]
+    p, d = mod[:pg], unc[:pd]
+    Ng, K = size(p)
+    pl = sys[:ptdf]*(sys[:Cp]*p + sys[:Cd]*d)
+    Nline = size(pl,1)
+    mop = typeof(unc[:opq]) == OrthoPolyQ ? MultiOrthoPoly([unc[:opq]],unc[:opq].op.deg) : unc[:opq]
+    @constraint(mod, con_plmax[i in 1:Nline], [1/λub[i]*(ub[i] - mean(pl[i,:],mop)); buildSOC(pl[i,:],mop)] in SecondOrderCone())
+    @constraint(mod, con_plmin[i in 1:Nline], [1/λlb[i]*(mean(pl[i,:],mop) - lb[i]); buildSOC(pl[i,:],mop)] in SecondOrderCone())
+end
+
+function addCoreDC!(mod::Model,sys::Dict,unc::Dict)
+    addVariablesDC!(mod,sys,unc)
+    addPowerFlowDC!(mod,sys,unc)
+end
+
+function buildSOC(x::Vector,mop::MultiOrthoPoly)
+    t = [ sqrt(Tensor(2,mop).get([i,i])) for i in 0:mop.dim-1 ]
+    (t.*x)[2:end]
 end

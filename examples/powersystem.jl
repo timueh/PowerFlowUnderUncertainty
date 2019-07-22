@@ -32,11 +32,31 @@ function setupPowerSystem()
     # λp, λl = 1.6*ones(Ng), 1.6*ones(Nline) # lambdas for chance constraint reformulations
     # pmax, pmin = 10*ones(Ng), zeros(Ng) # engineering limits
     # plmax, plmin = 10*ones(Nline), -10*ones(Nline) # engineering limits
+    con = Dict(:pg => Dict(
+                    :λ => Dict(
+                        :lb => 1.6*ones(Ng),
+                        :ub => 1.6*ones(Ng)),
+                    :lb => zeros(Ng),
+                    :ub => 10*ones(Ng) ),
+               :qg => Dict(
+                    :λ => Dict(
+                        :lb => 1.6*ones(Ng),
+                        :ub => 1.6*ones(Ng)),
+                    :lb => zeros(Ng),
+                    :ub => 10*ones(Ng) ),
+               :pl => Dict(
+                    :λ => Dict(
+                        :lb => 1.6*ones(Nline),
+                        :ub => 1.6*ones(Nline)),
+                    :lb => -10*ones(Nline),
+                    :ub =>  10*ones(Nline) )
+                        )
 
     return Dict(:Ybus=>Ybus,
                 :Ybr=>Ybr,
                 :Bsh=>Bsh,
                 :A=>A,
+                :ptdf=>Ψ,
                 :Cp=>Cp,
                 :Cd=>Cd,
                 :Ng=>Ng,
@@ -44,7 +64,8 @@ function setupPowerSystem()
                 :N=>N,
                 :Nline=>Nline,
                 :costquad=>costquad,
-                :costlin=>costlin
+                :costlin=>costlin,
+                :con=>con
                 )
 end
 ##
