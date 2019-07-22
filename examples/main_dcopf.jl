@@ -1,4 +1,4 @@
-using PowerFlowUnderUncertainty, LinearAlgebra, MosekTools, JuMP
+using PowerFlowUnderUncertainty, LinearAlgebra, MosekTools, JuMP, PolyChaos
 include("powersystem.jl")
 sys = setupPowerSystem()
 
@@ -8,17 +8,23 @@ deg = 4
 unc = setupUncertainty(μ,σ,w,sys[:Nd],deg)
 ξ = sampleFromGaussianMixture(5000,μ,σ,w)
 
-opf = Model(with_optimizer(Mosek.Optimizer))
-addCoreDC!(opf,sys,unc)
-addConstraintsGenDC!(opf,sys,unc)
-addConstraintsLineFlowDC!(opf,sys,unc)
-addCostDC!(opf,sys,unc)
-optimize!(opf)
+dcopf = Model(with_optimizer(Mosek.Optimizer))
+addCoreDC!(dcopf,sys,unc)
+addConstraintsGenDC!(dcopf,sys,unc)
+addConstraintsLineFlowDC!(dcopf,sys,unc)
+addCostDC!(dcopf,sys,unc)
+optimize!(dcopf)
 
-# opf_state = getGridState(opf,sys,unc)
-# opf_samples = generateSamples(ξ,opf_state,unc)
-#
-# plotHistogram_gen(opf_samples[:pg], "pg"; fignum = 1, color = "green")
-# plotHistogram_gen(opf_samples[:qg], "qg"; fignum = 2)
-# plotHistogram_v(opf_samples[:v], "v"; fignum = 3, color = "cyan")
-# plotHistogram_i(opf_samples[:i], "i"; fignum = 4)
+dcopf_state = getGridStateDC(dcopf,sys,unc)
+dcopf_samples = generateSamples(ξ,dcopf_state,unc)
+
+plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color = "green")
+# plotHistogram_gen(dcopf_samples[:qg], "qg"; fignum = 2)
+# plotHistogram_v(dcopf_samples[:v], "v"; fignum = 3, color = "cyan")
+# plotHistogram_i(dcopf_samples[:i], "i"; fignum = 4)
+
+T2 = Tensor(2, unc[:opq])
+psol = value.(dcopf[:pg])
+cost1 = sum([ sys[:costquad][i]*sum(T2.get([k-1,k-1])*psol[i,k]^2 for k in 1:unc[:dim]) + sys[:costlin][i]*psol[i,1] for i in 1:sys[:Ng] ])
+lin, quad = buildCostSOC(sys[:costlin],sys[:costquad],T2,deg+1)
+cost2 = objective_value(dcopf)^2 - sum( lin[i]^2/quad[i] for i in 1:length(lin) )

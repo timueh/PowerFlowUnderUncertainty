@@ -1,6 +1,7 @@
 export  getGridState,
         computeLineFlows,
-        computeLineCurrents
+        computeLineCurrents,
+        getGridStateDC
 
 function getGridState(mod::Model,sys::Dict,unc::Dict)
     d = Dict{Symbol,Matrix{Float64}}()
@@ -9,6 +10,16 @@ function getGridState(mod::Model,sys::Dict,unc::Dict)
     end
     merge!(d,computeLineFlows(mod,sys,unc))
     merge!(d,computeLineCurrents(mod,sys,unc))
+end
+
+function getGridStateDC(mod::Model,sys::Dict,unc::Dict)
+    display("hello")
+    d = Dict{Symbol,Matrix{Float64}}()
+    for (key, val) in mod.obj_dict
+        typeof(val) == Matrix{VariableRef} ? (d[key] = @. value(val)) : nothing
+    end
+    merge!(d,computeLineFlowsDC(mod,sys,unc))
+    # merge!(d,computeLineCurrents(mod,sys,unc))
 end
 
 function computeLineCurrents(mod::Model,grid::Dict,unc::Dict)
@@ -49,6 +60,11 @@ function computeLineFlows(mod::Model,grid::Dict,unc::Dict)
                 :ql_t=>fql_t,
                 :pl_f=>fpl_f,
                 :ql_f=>fql_f )
+end
+
+function computeLineFlowsDC(mod::Model,grid::Dict,unc::Dict)
+    p, d = value.(mod[:pg]), unc[:pd]
+    Dict(:pl => sys[:ptdf] * ( sys[:Cp]*p - sys[:Cd]*d ))
 end
 
 # given the incidence matrix of a graph, find the nodes i and j that line l makes up

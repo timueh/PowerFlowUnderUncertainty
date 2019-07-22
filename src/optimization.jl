@@ -11,7 +11,8 @@ export  addVariables!,
         addCostDC!,
         addCoreDC!,
         addConstraintsGenDC!,
-        addConstraintsLineFlowDC!
+        addConstraintsLineFlowDC!,
+        buildCostSOC
 
 function addVariables!(opf::Model,sys::Dict,unc::Dict)
     N, Ng = sys[:N], sys[:Ng]
@@ -95,14 +96,6 @@ function addPowerFlowDC!(opf::Model,sys::Dict,unc::Dict)
     @constraint(opf, energy_balance[j in 1:K], sum(p[i,j] for i in 1:Ng) - sum(d[i,j] for i in 1:Nd) == 0)
 end
 
-function addCostDC!(opf::Model,sys::Dict,unc::Dict)
-    p = opf[:pg]
-    Ng, K = size(p)
-    # to do: reformulate quadratic objective as an SOC!
-    # @objective(opf, Min, sum( p[i,1] * sys[:costlin][i] + sys[:costquad][i]*sum(p[i,l]^2 * unc[:T2].get([l-1,l-1]) for l in 1:K) for i in 1:Ng) )
-    @objective(opf, Min, sum( p[i,1]*sys[:costlin][i] for i in 1:Ng) )
-end
-
 function addConstraintsGenDC!(mod::Model,sys::Dict,unc::Dict)
     lb, λlb = sys[:con][:pg][:lb], sys[:con][:pg][:λ][:lb]
     ub, λub = sys[:con][:pg][:ub], sys[:con][:pg][:λ][:ub]
@@ -133,4 +126,24 @@ end
 function buildSOC(x::Vector,mop::MultiOrthoPoly)
     t = [ sqrt(Tensor(2,mop).get([i,i])) for i in 0:mop.dim-1 ]
     (t.*x)[2:end]
+end
+
+function buildCostSOC_perbus(bus::Int,lin::Real,quad::Real,T2::Tensor,K::Int)
+    [ 0.5*lin; zeros(K-1) ], quad*[ T2.get([k-1,k-1]) for k in 1:K ]
+end
+
+function buildCostSOC(lin::Vector,quad::Vector,T2::Tensor,K::Int)
+    @assert length(quad) == length(lin) "inconsistent length of cost coefficients"
+    res = [ buildCostSOC_perbus(i,lin[i],quad[i],T2,K) for i in 1:length(lin) ]
+    vcat([r[1] for r in res]...), vcat([r[2] for r in res]...) # unpack res
+end
+
+function addCostDC!(opf::Model,sys::Dict,unc::Dict)
+    p = opf[:pg]
+    pvec = vec(p')
+    Ng, K = size(p)
+    lin, quad = buildCostSOC(sys[:costlin],sys[:costquad],Tensor(2,unc[:opq]),K)
+    @variable(opf, t)
+    @constraint(opf, [t; sqrt.(quad) .* pvec + (1 ./ sqrt.(quad)).*lin ] in SecondOrderCone())
+    @objective(opf, Min, t)
 end
