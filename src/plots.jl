@@ -1,12 +1,13 @@
 export  plotHistogram,
         plotHistogram_gen,
-        plotHistogram_i,
-        plotHistogram_v
+        plotHistogram_nodal,
+        plotHistogram_branch
 
 function plotHistogram(x::Vector; kwargs...)
     bins = haskey(kwargs, :bins) ? kwargs[:bins] : 70
     color = haskey(kwargs, :color) ? kwargs[:color] : "blue"
-    plt[:hist](x,normed=true,bins=bins, color=color)
+    alpha = haskey(kwargs, :alpha) ? kwargs[:alpha] : 0.5
+    plt[:hist](x,normed=true,bins=bins,color=color,alpha=alpha)
     haskey(kwargs,:xlabel) ? xlabel(kwargs[:xlabel]) : nothing
     haskey(kwargs,:ylabel) ? ylabel(kwargs[:ylabel]) : nothing
     grid(true)
@@ -20,7 +21,7 @@ function plotHistogram_gen(pg::Matrix, name::String; kwargs...)
     plotHistogram(pg[2,:]; xlabel=name*"_2", ylabel="ρ("*name*"_2)", kwargs...)
 end
 
-function plotHistogram_v(v::Matrix, name::String; kwargs...)
+function plotHistogram_nodal(v::Matrix, name::String; kwargs...)
     haskey(kwargs,:fignum) ? figure(kwargs[:fignum]) : figure()
     plt[:subplot](221)
     plotHistogram(v[1,:]; xlabel=name*"_1", ylabel="ρ("*name*"_1)", kwargs...)
@@ -32,7 +33,7 @@ function plotHistogram_v(v::Matrix, name::String; kwargs...)
     plotHistogram(v[4,:]; xlabel=name*"_4", ylabel="ρ("*name*"_4)", kwargs...)
 end
 
-function plotHistogram_i(i::Matrix, name::String; kwargs...)
+function plotHistogram_branch(i::Matrix, name::String; kwargs...)
     haskey(kwargs,:fignum) ? figure(kwargs[:fignum]) : figure()
     plt[:subplot](321)
     plotHistogram(i[1,:]; xlabel=name*"_1", ylabel="ρ("*name*"_1)", kwargs...)

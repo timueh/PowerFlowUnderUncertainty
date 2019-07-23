@@ -18,10 +18,9 @@ optimize!(dcopf)
 dcopf_state = getGridStateDC(dcopf,sys,unc)
 dcopf_samples = generateSamples(ξ,dcopf_state,unc)
 
-plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color = "green")
-# plotHistogram_gen(dcopf_samples[:qg], "qg"; fignum = 2)
-# plotHistogram_v(dcopf_samples[:v], "v"; fignum = 3, color = "cyan")
-# plotHistogram_i(dcopf_samples[:i], "i"; fignum = 4)
+plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color="red", alpha=0.3)
+plotHistogram_nodal(dcopf_samples[:θ], "θ"; fignum = 4, color="red", alpha=0.3)
+plotHistogram_branch(dcopf_samples[:pl], "pl"; fignum = 6, color="red", alpha=0.3)
 
 T2 = Tensor(2, unc[:opq])
 psol = value.(dcopf[:pg])

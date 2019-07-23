@@ -3,7 +3,7 @@ export  sampleFromGaussianMixture,
         generateSamples
 
 function ρ_gauss(x,μ,σ)
-    1/sqrt(2*π*σ^2) * exp(-(x - μ)^2 / (2σ^2))
+    1 / sqrt(2*π*σ^2) * exp(-(x - μ)^2 / (2σ^2))
 end
 
 function setupUncertainty(μ::Vector{},σ::Vector{},w::Vector{},n::Int,deg::Int)
@@ -22,6 +22,7 @@ function setupUncertainty(μ::Vector{},σ::Vector{},w::Vector{},n::Int,deg::Int)
     return Dict(:opq=>opq,
                 :T2=>Tensor(2,opq),
                 :T3=>Tensor(3,opq),
+                :T4=>Tensor(4,opq),
                 :pd=>pd,
                 :qd=>qd,
                 :dim=>size(pd,2))
@@ -42,7 +43,16 @@ function generateSamples(x,d_in::Dict,unc::Dict)
     for (key, value) in d_in
         d_out[key] = (Φ*value')'
     end
-    # d_out[:i] = @. sqrt( d_out[:i_re]^2 + d_out[:i_im]^2 )
-    # d_out[:v] = @. sqrt( d_out[:e]^2 + d_out[:f]^2)
+    display(d_out)
+    if haskey(d_out,:i_re) && haskey(d_out,:i_im)
+        d_out[:i] = @. sqrt( d_out[:i_re]^2 + d_out[:i_im]^2 )
+    end
+    if haskey(d_out,:e) && haskey(d_out,:f)
+        display("I was here!")
+        v = d_out[:e] + im * d_out[:f]
+        d_out[:v] = abs.(v)
+        d_out[:θ] = angle.(v)
+    end
+    display(d_out)
     return d_out
 end

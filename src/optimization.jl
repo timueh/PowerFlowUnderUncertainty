@@ -6,6 +6,9 @@ export  addVariables!,
         addCost!,
         addInitialCondition!,
         addCore!,
+        addGenerationConstraint!,
+        addVoltageConstraint!,
+        addCurrentConstraint!,
         addVariablesDC!,
         addPowerFlowDC!,
         addCostDC!,
@@ -78,6 +81,77 @@ function addCore!(mod::Model,sys::Dict,unc::Dict)
     addPowerFlow!(mod,sys,unc)
     addSlackBus!(mod)
 end
+
+function addGenerationConstraint!(i::Int,x::Symbol,mod::Model,sys::Dict,unc::Dict)
+    pg, T2 = mod[x], unc[:T2]
+    Ng, K = size(pg)
+    @show λ, ub = sys[:con][x][:λ][:ub][i], sys[:con][x][:ub][i]
+    z = @variable(mod, lower_bound=0, upper_bound=10)
+    @constraint(mod, z^2 == sum(pg[i,k]^2*T2.get([k-1,k-1]) for k in 2:K))
+    @constraint(mod, pg[i,1] + λ*z <= ub)
+end
+
+function myfun_generator(K::Int,T4::Tensor)
+    function myfun(x...)
+        e, f = x[1:K], x[K+1:end]
+        sum((e[l1]*e[l2]*e[l3]*e[l4] + 2*(e[l1]*e[l2]*f[l3]*f[l4]) + f[l1]*f[l2]*f[l3]*f[l4] )*T4.get([l1-1,l2-1,l3-1,l4-1]) for l4=1:K, l3=1:K, l2=1:K, l1=1:K )
+    end
+end
+
+function line_current_generator(L::Int,T4::Tensor,ybr)
+    function line_current(x...)
+        Ei, Fi, Ej, Fj = x[1:L], x[L+1:2L], x[(2L+1):3L], x[(3L+1):4L]
+        gbr, bbr = real(ybr), imag(ybr)
+        (gbr^2+bbr^2)^2 * sum( ( (Ei[l1]-Ej[l1])*(Ei[l2]-Ej[l2])*(Ei[l3]-Ej[l3])*(Ei[l4]-Ej[l4]) + 2*(Ei[l1]-Ej[l1])*(Ei[l2]-Ej[l2])*(Fi[l3]-Fj[l3])*(Fi[l4]-Fj[l4]) + (Fi[l1]-Fj[l1])*(Fi[l2]-Fj[l2])*(Fi[l3]-Fj[l3])*(Fi[l4]-Fj[l4]) )*T4.get([l1-1,l2-1,l3-1,l4-1]) for l4=1:L, l3=1:L, l2=1:L, l1=1:L )
+    end
+end
+
+
+
+function addVoltageConstraint!(i::Int,mod::Model,sys::Dict,unc::Dict)
+    T2, T4 = unc[:T2], unc[:T4]
+    e, f = mod[:e], mod[:f]
+    ef = [ e[i,:]; f[i,:] ]
+    # display(ef)
+    N, K = size(e)
+    V_ev = @variable(mod, lower_bound=0.0)
+    V_sig = @variable(mod, lower_bound=0.0)
+
+    myfun = myfun_generator(K,T4)
+    register(mod, :myfun, 2*K, myfun, autodiff=true)
+    @constraint(mod, V_ev == sum((e[i,l]^2 + f[i,l]^2)*T2.get([l-1,l-1]) for l=1:K) )
+    @NLconstraint(mod, V_sig^2 + V_ev^2 == myfun(ef...))
+
+    λlb, lb = sys[:con][:v][:λ][:lb][i], sys[:con][:v][:lb][i]
+    @constraint(mod, lb^2 <= V_ev - λlb*V_sig)
+
+    # λub, ub = sys[:con][:v][:λ][:ub][i], sys[:con][:v][:ub][i]
+    # @constraint(mod, V_ev + λub*V_sig <= ub^2 )
+end
+
+function addCurrentConstraint!(l::Int,model::Model,sys::Dict,unc::Dict)
+    i, j = getNodesForLine(sys[:A],l)
+    T2, T4 = unc[:T2], unc[:T4]
+    ybr = sys[:Ybr]
+    gbr, bbr = real(ybr), imag(ybr)
+    e, f = model[:e], model[:f]
+    N, L = size(e)
+
+    ef = [ e[i,:]; f[i,:]; e[j,:]; f[j,:] ]
+
+    myfun_line = line_current_generator(L,T4,ybr[l,l])
+    register(model, :myfun_line, 4*L, myfun_line, autodiff=true)
+
+    Il_ev = @variable(model)
+    Il_sig = @variable(model, lower_bound=0.0)
+
+    @constraint(model, Il_ev == (gbr[l,l]^2+bbr[l,l]^2)*sum( ( (e[i,l1]-e[j,l1])^2 + (f[i,l1]-f[j,l1])^2 )*T2.get([l1-1,l1-1]) for l1 in 1:L)  )
+    @NLconstraint(model, Il_sig^2 + Il_ev^2 == myfun_line(ef...) )
+
+    λub, ub = sys[:con][:pl][:λ][:ub][l], sys[:con][:pl][:ub][l]
+    @constraint(model, Il_ev + λub*Il_sig <= ub^2 )
+end
+
 
 #########################################################################
 ## DC Equations ##

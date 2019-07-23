@@ -7,5 +7,4 @@ include("optimization.jl")
 include("powerflowcomputations.jl")
 include("plots.jl")
 
-
 end # module

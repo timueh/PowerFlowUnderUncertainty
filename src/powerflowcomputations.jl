@@ -13,13 +13,12 @@ function getGridState(mod::Model,sys::Dict,unc::Dict)
 end
 
 function getGridStateDC(mod::Model,sys::Dict,unc::Dict)
-    display("hello")
     d = Dict{Symbol,Matrix{Float64}}()
     for (key, val) in mod.obj_dict
         typeof(val) == Matrix{VariableRef} ? (d[key] = @. value(val)) : nothing
     end
     merge!(d,computeLineFlowsDC(mod,sys,unc))
-    # merge!(d,computeLineCurrents(mod,sys,unc))
+    merge!(d,computeAnglesDC(mod,sys,unc))
 end
 
 function computeLineCurrents(mod::Model,grid::Dict,unc::Dict)
@@ -64,7 +63,13 @@ end
 
 function computeLineFlowsDC(mod::Model,grid::Dict,unc::Dict)
     p, d = value.(mod[:pg]), unc[:pd]
-    Dict(:pl => sys[:ptdf] * ( sys[:Cp]*p - sys[:Cd]*d ))
+    Dict(:pl => grid[:ptdf] * ( grid[:Cp]*p - grid[:Cd]*d ))
+end
+
+function computeAnglesDC(mod::Model,grid::Dict,unc::Dict)
+    p, d, Bbus = value.(mod[:pg]), unc[:pd], grid[:Bbus]
+    Bbusinv, pnet = inv(Bbus[2:end,2:end]), grid[:Cp]*p - grid[:Cd]*d
+    Dict(:θ => [ zeros(1,size(p,2)); -Bbusinv * pnet[2:end,:] ])
 end
 
 # given the incidence matrix of a graph, find the nodes i and j that line l makes up
