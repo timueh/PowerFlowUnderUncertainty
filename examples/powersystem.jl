@@ -25,7 +25,7 @@ function setupPowerSystem()
     Ψ = [ zeros(Nline)  -Bbr*A[:,2:end]*inv(A[:,2:end]'*Bbr*A[:,2:end]) ]
 
     # book-keeping
-    Cp, Cd = [1 0; 0 0; 0 0; 0 1], [0 0; 1 0; 0 1; 0 0 ]
+    Cp, Cd = [1 0; 0 0; 0 1; 0 0], [0 0; 1 0; 0 0; 0 1 ]
     Ng, Nd = size(Cp,2), size(Cd,2)
 
     # cost

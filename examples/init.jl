@@ -29,25 +29,33 @@ end
 
 function createLabels(x::Symbol,i::Int)
 	xlab, ylab = [], []
-	if x in [:i]
+	if x == :i
 		xlab = string("\\ibus_{",i,"}")
 		ylab = string("\\density_{\\iRV_{",i,"}}(",xlab,")")
 	elseif x == :v
 		xlab = string("\\vmag_{",i,"}")
 		ylab = string("\\density_{\\vmagRV_{",i,"}}(",xlab,")")
-	elseif x in [:θ]
+	elseif x == :θ
 		xlab = string("\\phase_{",i,"}")
 		ylab = string("\\density_{\\phaseRV_{",i,"}}(",xlab,")")
-	elseif x in [:pg]
-		xlab = string("\\p_{",i,"}")
-		ylab = string("\\density_{\\pRV_{",i,"}}(",xlab,")")
-		# xlab = string("p_{",i,"}^{\\text{g}}")
-		# ylab = string("\\density_{\\rv{p}_{",i,"}}^{\\text{g}}(",xlab,")")
-	elseif x in [:qg]
-		xlab = string("\\q_{",i,"}")
-		ylab = string("\\density_{\\qRV_{",i,"}}(",xlab,")")
-		# xlab = string("q_{",i,"}^{\\text{g}}")
-		# ylab = string("\\density_{\\rv{q}_{",i,"}}^{\\text{g}}(",xlab,")")
+	elseif x == :pg
+		# assign generator number to bus number!
+		i == 1 ? i = 1 : i = 3
+		xlab = string("\\pbus_{",i,"}")
+		ylab = string("\\density_{\\pbusRV_{",i,"}}(",xlab,")")
+	elseif x == :qg
+		# assign generator number to bus number!
+		i == 1 ? i = 1 : i = 3
+		xlab = string("\\qbus_{",i,"}")
+		ylab = string("\\density_{\\qbusRV_{",i,"}}(",xlab,")")
+	elseif x == :pd
+		i == 1 ? i = 2 : i = 4
+		xlab = string("\\pbus_{",i,"}")
+		ylab = string("\\density_{-\\pbusRV_{",i,"}}(",xlab,")")
+	elseif x == :qd
+		i == 1 ? i = 2 : i = 4
+		xlab = string("\\qbus_{",i,"}")
+		ylab = string("\\density_{-\\qbusRV_{",i,"}}(",xlab,")")
 	else
 		throw(error("Symbol $x is not known."))
 	end
@@ -69,15 +77,13 @@ end
 
 function createTikzFigure(fname::String,d::Dict)
 	newfile = open(fname,"w")
-	open("output/bareTikzFile.txt") do file
+	open("output/bareTikzFile.tex") do file
 	           for ln in eachline(file)
 	           		write(newfile, haskey(d, strip(ln)) ? d[strip(ln)]*"\n" : ln*"\n")
 	           end
 	       end
 	close(newfile)
 end
-
-width, height = "3.9cm", "2.75cm" 
 
 sys = setupPowerSystem()
 

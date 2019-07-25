@@ -51,7 +51,7 @@ end
 
 function addPVBus!(opf::Model,sys::Dict,unc::Dict)
     e, f, pg = opf[:e], opf[:f], opf[:pg]
-    K, bus, gen = size(e,2), 4, 2
+    K, bus, gen = size(e,2), 3, 2
     v = [1.04^2; zeros(K-1)]
     @constraint(opf, PVBus_V[k=1:K], sum((e[bus,l1]*e[bus,l2]+f[bus,l1]*f[bus,l2])*unc[:T3].get([l1-1,l2-1,k-1])/unc[:T2].get([k-1,k-1]) for l1=1:K, l2=1:K) == v[k] )
     @constraint(opf, PVBus_P, pg[gen,:] .== [ 0.84; zeros(K-1) ])

@@ -8,6 +8,7 @@ function getGridState(mod::Model,sys::Dict,unc::Dict)
     for (key, val) in mod.obj_dict
         typeof(val) == Matrix{VariableRef} ? (d[key] = @. value(val)) : nothing
     end
+    d[:pd], d[:qd] = unc[:pd], unc[:qd]
     merge!(d,computeLineFlows(mod,sys,unc))
     merge!(d,computeLineCurrents(mod,sys,unc))
 end
