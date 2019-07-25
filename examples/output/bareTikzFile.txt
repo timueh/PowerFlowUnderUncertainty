@@ -1,0 +1,26 @@
+\begin{tikzpicture}
+\begin{axis}[
+set layers = Bowpark,
+%	set layers,
+%	every axis plot/.append style={on layer=pre main},
+axis lines=middle,
+xlab
+ylab
+every axis y label/.style={at=(current axis.above origin),anchor=south},
+every axis x label/.style={at=(current axis.right of origin),anchor=west},
+ybar,
+xtick=,% reset from ybar interval
+ymin = 0,
+grid=major,
+grid style = {dashed, gray!30},
+enlarge x limits=true,
+enlarge y limits=false,
+width
+height
+]
+\addplot+[hist={data=x,bins=50,density},
+color
+]
+filename
+\end{axis}
+\end{tikzpicture}

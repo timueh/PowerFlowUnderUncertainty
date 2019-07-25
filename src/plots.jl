@@ -23,7 +23,7 @@ end
 
 function plotHistogram_nodal(v::Matrix, name::String; kwargs...)
     haskey(kwargs,:fignum) ? figure(kwargs[:fignum]) : figure()
-    plt[:subplot](221)
+        plt[:subplot](221)
     plotHistogram(v[1,:]; xlabel=name*"_1", ylabel="ρ("*name*"_1)", kwargs...)
     plt[:subplot](222)
     plotHistogram(v[2,:]; xlabel=name*"_2", ylabel="ρ("*name*"_2)", kwargs...)

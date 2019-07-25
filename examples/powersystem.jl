@@ -8,11 +8,11 @@ function setupPowerSystem()
     0.00744
     0.00744
     0.01272
-    0.01], [0.0504
+    0.01004], [0.0504
     0.0372
     0.0372
     0.0636
-    0.06]
+    0.0601]
     @assert length(Rbr) == length(Xbr) == Nline "inconsistent branch parameters"
     Ybr = diagm(0 => 1 ./ (Rbr + im*Xbr))
     Bsh = zeros(size(Ybr))
