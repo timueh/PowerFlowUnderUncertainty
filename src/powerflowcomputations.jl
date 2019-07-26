@@ -64,7 +64,7 @@ end
 
 function computeLineFlowsDC(mod::Model,grid::Dict,unc::Dict)
     p, d = value.(mod[:pg]), unc[:pd]
-    Dict(:pl => grid[:ptdf] * ( grid[:Cp]*p - grid[:Cd]*d ))
+    Dict(:pl_t => grid[:ptdf] * ( grid[:Cp]*p - grid[:Cd]*d ))
 end
 
 function computeAnglesDC(mod::Model,grid::Dict,unc::Dict)

@@ -1,5 +1,6 @@
 \documentclass[tikz]{standalone}
 \usepackage{pgfplots}
+\usepackage{upgreek}
 \pgfplotsset{compat=1.13}
 \input{../../../macros/macros.tex}
 \input{../../../macros/macros_powerflow.tex}
@@ -29,6 +30,10 @@ enlarge y limits=false,
 width
 height
 ]
+\addplot+[hist={data=x,bins=50,density},
+color_comp
+]
+filename_comp
 \addplot+[hist={data=x,bins=50,density},
 color
 ]

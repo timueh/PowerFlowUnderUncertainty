@@ -11,7 +11,7 @@ function createCSV(fileDict,data::Dict)
 	end
 end
 
-function createTikz(fileDict,data,foldername="figures/CaseStudy/")
+function createTikz(fileDict,data,foldername)
 	for (key, val) in fileDict
 		display(val)
 		for (i, samples) in enumerate(eachrow(data[key]))
@@ -23,6 +23,19 @@ function createTikz(fileDict,data,foldername="figures/CaseStudy/")
 			# *x*"\}_"*string(i)*"\}("*xsub*")"
 			fname = val["name"]*"_"*string(i)*".tex"
 			createTikzFigure(fname,d)
+		end
+	end
+end
+
+function createTikz(fileDict,data,foldername,compfoldername)
+	for (key, val) in fileDict
+		display(val)
+		for (i, samples) in enumerate(eachrow(data[key]))
+			fname = val["name"]*"_"*string(i)*".csv"
+			xlab, ylab = createLabels(key,i)
+			d = createDictForTikz(xlab,ylab,foldername*fname,compfoldername*fname; compcolor=val["compcolor"], color=val["color"],width=val["width"],height=val["height"])
+			fname = val["name"]*"_"*string(i)*".tex"
+			createTikzFigure(fname,d,source="output/bareTikzFile_comp.tex")
 		end
 	end
 end
@@ -56,6 +69,12 @@ function createLabels(x::Symbol,i::Int)
 		i == 1 ? i = 2 : i = 4
 		xlab = string("\\qbus_{",i,"}")
 		ylab = string("\\density_{-\\qbusRV_{",i,"}}(",xlab,")")
+	elseif x == :pl_t
+		xlab = string("\\pbranch_{",i,"}")
+		ylab = string("\\density_{\\pbranchRV_{",i,"}}(",xlab,")")
+	elseif x == :ql_t
+		xlab = string("\\qbranch_{",i,"}")
+		ylab = string("\\density_{\\qbranchRV_{",i,"}}(",xlab,")")
 	else
 		throw(error("Symbol $x is not known."))
 	end
@@ -72,12 +91,21 @@ function createDictForTikz(x::String,y::String,fname::String; color="black!20", 
 			"height" => "height = "*height*",")
 end
 
+function createDictForTikz(x::String,y::String,fname::String,compfname::String; compcolor="gray!20", color="black!20", width="5cm", height="3cm")
+	# keys = ["xlab", "ylab", "filename", "color", "width", "height"]
+	D = Dict("xlab"=>	"xlabel = \$"*x*"\$,",
+			"ylab"=>	"ylabel = \$"*y*"\$,",
+			"filename"=> "file {"*fname*"};",
+			"filename_comp"=> "file {"*compfname*"};",
+			"color" => "color = "*color,
+			"color_comp" => "color = "*compcolor,
+			"width" => "width = "*width*",",
+			"height" => "height = "*height*",")
+end
 
-
-
-function createTikzFigure(fname::String,d::Dict)
+function createTikzFigure(fname::String,d::Dict; source="output/bareTikzFile.tex")
 	newfile = open(fname,"w")
-	open("output/bareTikzFile.tex") do file
+	open(source) do file
 	           for ln in eachline(file)
 	           		write(newfile, haskey(d, strip(ln)) ? d[strip(ln)]*"\n" : ln*"\n")
 	           end
@@ -85,8 +113,9 @@ function createTikzFigure(fname::String,d::Dict)
 	close(newfile)
 end
 
+using Random
+Random.seed!(1234)
 sys = setupPowerSystem()
-
 μ, σ, w = [2.1, 3.2], [0.3, 0.4], [0.3, 0.7]
 @assert sum(w) == 1 "The weights do not sum to one."
 deg = 4

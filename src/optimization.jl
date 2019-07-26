@@ -75,6 +75,16 @@ function addInitialCondition!(opf::Model,sys::Dict,unc::Dict)
     [ set_start_value(f_,0) for f_ in f ]
 end
 
+function addInitialCondition!(m::Model,m_sol::Model)
+    e, f, pg, qg = m[:e], m[:f], m[:pg], m[:qg]
+    e_sol, f_sol, pg_sol, qg_sol =  map(x->value.(m_sol[x]), [:e, :f, :pg, :qg])
+    [ set_start_value(pg_, pg_sol_) for (pg_, pg_sol_) in zip(pg, pg_sol) ]
+    [ set_start_value(qg_, qg_sol_) for (qg_, qg_sol_) in zip(qg, qg_sol) ]
+    [ set_start_value(e_, e_sol_) for (e_, e_sol_) in zip(e, e_sol) ]
+    [ set_start_value(f_, f_sol_) for (f_, f_sol_) in zip(f, f_sol) ]
+end
+
+
 function addCore!(mod::Model,sys::Dict,unc::Dict)
     addVariables!(mod,sys,unc)
     addInitialCondition!(mod,sys,unc)
@@ -140,7 +150,11 @@ function addCurrentConstraint!(l::Int,model::Model,sys::Dict,unc::Dict)
     ef = [ e[i,:]; f[i,:]; e[j,:]; f[j,:] ]
 
     myfun_line = line_current_generator(L,T4,ybr[l,l])
-    register(model, :myfun_line, 4*L, myfun_line, autodiff=true)
+    try
+        register(model, :myfun_line, 4*L, myfun_line, autodiff=true)
+    catch e
+        display("hello!!")
+    end
 
     Il_ev = @variable(model)
     Il_sig = @variable(model, lower_bound=0.0)

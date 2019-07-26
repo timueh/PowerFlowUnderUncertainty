@@ -5,19 +5,34 @@ include("init.jl")
 dcopf = Model(with_optimizer(Mosek.Optimizer))
 addCoreDC!(dcopf,sys,unc)
 addConstraintsGenDC!(dcopf,sys,unc)
-addConstraintsLineFlowDC!(dcopf,sys,unc)
+# addConstraintsLineFlowDC!(dcopf,sys,unc)
 addCostDC!(dcopf,sys,unc)
 optimize!(dcopf)
 
 dcopf_state = getGridStateDC(dcopf,sys,unc)
-dcopf_samples = generateSamples(ξ,dcopf_state,unc)
+dcopf_samples = generateSamples(ξ,dcopf_state,sys,unc)
 
-plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color="red", alpha=0.3)
-plotHistogram_nodal(dcopf_samples[:θ], "θ"; fignum = 4, color="red", alpha=0.3)
-plotHistogram_branch(dcopf_samples[:pl], "pl"; fignum = 6, color="red", alpha=0.3)
+mycolor = "green"
+plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color=mycolor, alpha=0.3)
+plotHistogram_nodal(dcopf_samples[:θ], "θ"; fignum = 4, color=mycolor, alpha=0.3)
+plotHistogram_branch(dcopf_samples[:pl_t], "pl"; fignum = 6, color=mycolor, alpha=0.3)
 
-T2 = Tensor(2, unc[:opq])
-psol = value.(dcopf[:pg])
-cost1 = sum([ sys[:costquad][i]*sum(T2.get([k-1,k-1])*psol[i,k]^2 for k in 1:unc[:dim]) + sys[:costlin][i]*psol[i,1] for i in 1:sys[:Ng] ])
-lin, quad = buildCostSOC(sys[:costlin],sys[:costquad],T2,deg+1)
-cost2 = objective_value(dcopf)^2 - sum( lin[i]^2/quad[i] for i in 1:length(lin) )
+width, height, color, compcolor = "3.9cm", "2.75cm", "cyan!40", "red!20"
+files_to_save = Dict(:θ => Dict("name"=>"voltage_angle",
+								"color"=>color,
+								"compcolor"=>compcolor,
+								"width"=>"2.95cm",
+								"height"=>height),
+					 :pg => Dict("name"=>"active_power",
+								"color"=>color,
+								"compcolor"=>compcolor,
+								"width"=>"4.7cm",
+								"height"=>height),
+					 :pl_t => Dict("name"=>"active_power_to",
+								"color"=>color,
+								"compcolor"=>compcolor,
+								"width"=>width,
+								"height"=>height))
+
+createCSV(files_to_save,dcopf_samples)
+createTikz(files_to_save,dcopf_samples,"","../acopf_con/")

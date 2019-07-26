@@ -37,7 +37,7 @@ function sampleFromGaussianMixture(n::Int,μ::Vector{},σ::Vector{},w::Vector{})
     return X
 end
 
-function generateSamples(x,d_in::Dict,unc::Dict)
+function generateSamples(x,d_in::Dict,sys::Dict,unc::Dict)
     Φ = evaluate(x,unc[:opq])
     d_out = Dict{Symbol,Matrix{Float64}}()
     for (key, value) in d_in
@@ -45,14 +45,21 @@ function generateSamples(x,d_in::Dict,unc::Dict)
     end
     display(d_out)
     if haskey(d_out,:i_re) && haskey(d_out,:i_im)
-        d_out[:i] = @. sqrt( d_out[:i_re]^2 + d_out[:i_im]^2 )
+        i = d_out[:i_re] + im * d_out[:i_im]
+        d_out[:i] = abs.(i)
+        d_out[:i_angle] = angle.(i)
     end
-    if haskey(d_out,:e) && haskey(d_out,:f)
-        display("I was here!")
+    # s = d_out[:pl_t] + im*d_out[:ql_t]
+    # d_out[:s_mag] = abs.(s)
+    # d_out[:s_ang] = angle.(s)
+    if haskey(d_out,:e) && haskey(d_out,:f) 
         v = d_out[:e] + im * d_out[:f]
         d_out[:v] = abs.(v)
         d_out[:θ] = angle.(v)
     end
+    X = Matrix{Float64}(undef,size(x,1),1)
+    X[:] = [ sum( p[i]^2*sys[:costquad][i] + p[i]*sys[:costlin][i] for i in 1:sys[:Ng] ) for p in eachcol(d_out[:pg]) ]
+    d_out[:cost] = X
     display(d_out)
     return d_out
 end

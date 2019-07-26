@@ -27,30 +27,27 @@ function setupPowerSystem()
     # book-keeping
     Cp, Cd = [1 0; 0 0; 0 1; 0 0], [0 0; 1 0; 0 0; 0 1 ]
     Ng, Nd = size(Cp,2), size(Cd,2)
-
     # cost
-    costquad, costlin = [1000, 5000], ones(Ng)
-    # λp, λl = 1.6*ones(Ng), 1.6*ones(Nline) # lambdas for chance constraint reformulations
-    # pmax, pmin = 10*ones(Ng), zeros(Ng) # engineering limits
-    # plmax, plmin = 10*ones(Nline), -10*ones(Nline) # engineering limits
+    costquad, costlin = [2500, 1000], [100, 200]
+    # constraints
     con = Dict(:pg => Dict(
                     :λ => Dict(
                         :lb => 1.6*ones(Ng),
                         :ub => 1.6*ones(Ng)),
                     :lb => zeros(Ng),
-                    :ub => [4.0, 10.0] ),
+                    :ub => [4.0, 3.05] ),
                :qg => Dict(
                     :λ => Dict(
                         :lb => 1.6*ones(Ng),
                         :ub => 2.6*ones(Ng)),
                     :lb => zeros(Ng),
-                    :ub => [10.0, 1.2] ),
+                    :ub => [2.3, 1.2] ),
                :pl => Dict(
                     :λ => Dict(
                         :lb => 1.6*ones(Nline),
-                        :ub => 2.0*ones(Nline)),
+                        :ub => 1.6*ones(Nline)),
                     :lb => -10*ones(Nline),
-                    :ub =>  [3.5, 10, 10, 2.0, 1.30] ),
+                    :ub =>  [3.0, 10, 10, 2.75, 1.30] ),
                 :v => Dict(
                      :λ => Dict(
                          :lb => 2.5*ones(N),
