@@ -12,6 +12,22 @@ optimize!(opf)
 opf_state = getGridState(opf,sys,unc)
 opf_samples = generateSamples(ξ,opf_state,sys,unc)
 
+# constrained problem
+opf_con = Model(with_optimizer(Ipopt.Optimizer, max_iter=1000))
+addCore!(opf_con,sys,unc)
+addConsistencyConstraints!(opf_con)
+addGenerationConstraint!(2,:pg,opf_con,sys,unc)
+addGenerationConstraint!(1,:qg,opf_con,sys,unc)
+addCost!(opf_con,sys,unc)
+optimize!(opf_con)
+
+opf_con_state = getGridState(opf_con,sys,unc)
+opf_con_samples = generateSamples(ξ,opf_con_state,sys,unc)
+
+########################################################################
+##### POST PROCESSING #####
+########################################################################
+
 mycolor = "red"
 plotHistogram_gen(opf_samples[:pg], "pg"; fignum = 1, color = mycolor)
 plotHistogram_gen(opf_samples[:qg], "qg"; fignum = 2, color = mycolor)
@@ -71,24 +87,6 @@ createCSV(files_to_save,opf_samples)
 createTikz(files_to_save,opf_samples,"","../ppf/")
 
 ##################################################
-##################################################
-##################################################
-
-opf_con = Model(with_optimizer(Ipopt.Optimizer, max_iter=1000))
-addCore!(opf_con,sys,unc)
-addConsistencyConstraints!(opf_con)
-# addInitialCondition!(opf_con,opf)
-addGenerationConstraint!(2,:pg,opf_con,sys,unc)
-addGenerationConstraint!(1,:qg,opf_con,sys,unc)
-# addVoltageConstraint!(2,opf_con,sys,unc)
-# addCurrentConstraint!(1,opf_con,sys,unc)
-# addCurrentConstraint!(4,opf_con,sys,unc)
-addCost!(opf_con,sys,unc)
-optimize!(opf_con)
-
-opf_con_state = getGridState(opf_con,sys,unc)
-opf_con_samples = generateSamples(ξ,opf_con_state,sys,unc)
-
 mycolor = "green"
 plotHistogram_gen(opf_con_samples[:pg], "pg"; fignum = 1, color = mycolor)
 plotHistogram_gen(opf_con_samples[:qg], "qg"; fignum = 2, color = mycolor)

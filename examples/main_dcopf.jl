@@ -1,4 +1,4 @@
-using PowerFlowUnderUncertainty, LinearAlgebra, MosekTools, JuMP, PolyChaos
+using PowerFlowUnderUncertainty, LinearAlgebra, MosekTools, JuMP, PolyChaos, DelimitedFiles
 include("powersystem.jl")
 include("init.jl")
 
@@ -12,12 +12,16 @@ optimize!(dcopf)
 dcopf_state = getGridStateDC(dcopf,sys,unc)
 dcopf_samples = generateSamples(ξ,dcopf_state,sys,unc)
 
+########################################################################
+##### POST PROCESSING #####
+########################################################################
+
 mycolor = "green"
 plotHistogram_gen(dcopf_samples[:pg], "pg"; fignum = 1, color=mycolor, alpha=0.3)
 plotHistogram_nodal(dcopf_samples[:θ], "θ"; fignum = 4, color=mycolor, alpha=0.3)
 plotHistogram_branch(dcopf_samples[:pl_t], "pl"; fignum = 6, color=mycolor, alpha=0.3)
 
-width, height, color, compcolor = "3.9cm", "2.75cm", "cyan!40", "red!20"
+width, height, color, compcolor = "3.9cm", "2.75cm", "black!60!green", "red!20"
 files_to_save = Dict(:θ => Dict("name"=>"voltage_angle",
 								"color"=>color,
 								"compcolor"=>compcolor,

@@ -7,3 +7,5 @@ deps/deps.jl
 docs/build
 *.pdf
 *.pptx
+*.csv
+*.tex

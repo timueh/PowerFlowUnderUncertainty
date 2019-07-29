@@ -11,9 +11,12 @@ pf_state = getGridState(pf,sys,unc)
 pf_samples = generateSamples(ξ,pf_state,sys,unc)
 
 mycolor = "red"
+plotHistogram_gen(pf_samples[:pd], "pd"; fignum = 1+10, color = mycolor)
+plotHistogram_gen(pf_samples[:qd], "qd"; fignum = 2+10, color = mycolor)
 
-# plotHistogram_gen(pf_samples[:pd], "pd"; fignum = 1+10, color = mycolor)
-# plotHistogram_gen(pf_samples[:qd], "qd"; fignum = 2+10, color = mycolor)
+########################################################################
+##### POST PROCESSING #####
+########################################################################
 
 width, height, color = "3.9cm", "2.75cm", "black!40"
 files_to_save = Dict(:v => Dict("name"=>"voltage_magnitude",
@@ -55,8 +58,6 @@ files_to_save = Dict(:v => Dict("name"=>"voltage_magnitude",
 
 createCSV(files_to_save,pf_samples)
 createTikz(files_to_save,pf_samples,"")
-# mv ~/Documents/JuliaDev/PowerFlowUnderUncertainty/examples/*.tex ./
-# mv ~/Documents/JuliaDev/PowerFlowUnderUncertainty/examples/*.csv ./
 
 
 
