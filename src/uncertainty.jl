@@ -6,13 +6,12 @@ function ρ_gauss(x,μ,σ)
     1 / sqrt(2*π*σ^2) * exp(-(x - μ)^2 / (2σ^2))
 end
 
-function setupUncertainty(μ::Vector{},σ::Vector{},w::Vector{},n::Int,deg::Int)
+function setupUncertainty(μ::Vector,σ::Vector,w::Vector,n::Int,deg::Int)
     @assert length(μ) == length(σ) == length(w) "inconsistent lengths of μ and σ"
     ρ(x) = sum( w[i]*ρ_gauss(x,μ[i],σ[i]) for i in 1:length(w) )
     meas = Measure("my_GaussMixture", ρ, (-Inf,Inf), false, Dict(:μ=>μ,:σ=>σ,:w=>w)) # build measure
-    op = OrthoPoly("my_op",deg,meas;Nquad=150,Nrec = 5*deg, discretization=stieltjes) # construct orthogonal polynomial
-    opq = OrthoPolyQ(op)
-    showbasis(op,digits=2) # in case you wondered
+    opq = OrthoPoly("my_op",deg,meas;Nquad=150,Nrec = 5*deg, discretization=stieltjes) # construct orthogonal polynomial
+    showbasis(opq,digits=2) # in case you wondered
 
     pd = zeros(n,deg+1)
     pd[1, [1,2]] = calculateAffinePCE(opq)

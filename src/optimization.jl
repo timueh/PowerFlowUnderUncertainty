@@ -189,7 +189,7 @@ function addConstraintsGenDC!(mod::Model,sys::Dict,unc::Dict)
     ub, λub = sys[:con][:pg][:ub], sys[:con][:pg][:λ][:ub]
     p = mod[:pg]
     Ng, K = size(p)
-    mop = typeof(unc[:opq]) == OrthoPolyQ ? MultiOrthoPoly([unc[:opq]],unc[:opq].op.deg) : unc[:opq]
+    mop = typeof(unc[:opq]) != MultiOrthoPoly ? MultiOrthoPoly([unc[:opq]],deg(unc[:opq])) : unc[:opq]
     @constraint(mod, con_pmax[i in 1:Ng], [1/λub[i]*(ub[i] - mean(p[i,:],mop)); buildSOC(p[i,:],mop)] in SecondOrderCone())
     @constraint(mod, con_pmin[i in 1:Ng], [1/λlb[i]*(mean(p[i,:],mop) - lb[i]); buildSOC(p[i,:],mop)] in SecondOrderCone())
 end
@@ -201,7 +201,7 @@ function addConstraintsLineFlowDC!(mod::Model,sys::Dict,unc::Dict)
     Ng, K = size(p)
     pl = sys[:ptdf]*(sys[:Cp]*p + sys[:Cd]*d)
     Nline = size(pl,1)
-    mop = typeof(unc[:opq]) == OrthoPolyQ ? MultiOrthoPoly([unc[:opq]],unc[:opq].op.deg) : unc[:opq]
+    mop = typeof(unc[:opq]) != MultiOrthoPoly ? MultiOrthoPoly([unc[:opq]],deg(unc[:opq])) : unc[:opq]
     @constraint(mod, con_plmax[i in 1:Nline], [1/λub[i]*(ub[i] - mean(pl[i,:],mop)); buildSOC(pl[i,:],mop)] in SecondOrderCone())
     @constraint(mod, con_plmin[i in 1:Nline], [1/λlb[i]*(mean(pl[i,:],mop) - lb[i]); buildSOC(pl[i,:],mop)] in SecondOrderCone())
 end

@@ -6,3 +6,5 @@ The code implements methods from the following papers:
 
 - [Chance-constrained AC-OPF](https://ieeexplore.ieee.org/document/8719988)
 - [Chance-constrained DC-OPF](https://www.sciencedirect.com/science/article/pii/S235246771830105X) (open access)
+
+Polynomial chaos is used to propagate uncertainties, for which we use [`PolyChaos.jl`](https://github.com/timueh/PolyChaos.jl).

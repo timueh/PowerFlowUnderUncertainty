@@ -1,3 +1,10 @@
+export 	createCSV,
+		createTikz,
+		createLabels,
+		createDictForTikz,
+		createTikzFigure
+
+
 function createCSV(fileDict,data::Dict)
 	mynames = String[]
 	for (key, val) in fileDict
